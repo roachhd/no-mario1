@@ -5,4 +5,6 @@ www.zenva.com
 www.gamedevacademy.org
 ==================================================
 
-Artwork licenses: public domain
+Artwork licenses: 
+
+tiles: public domain - http://opengameart.org/content/platformer-art-deluxe
