@@ -1,7 +1,3 @@
-<!--
-To change this template, choose Tools | Templates
-and open the template in the editor.
--->
 <!DOCTYPE html>
 <html>
     <head>
@@ -21,30 +17,52 @@ and open the template in the editor.
         var Q = Quintus()
             .include("Sprites, Scenes, Input, 2D, Touch, UI")
             .setup({
-                width: 640,
-                height: 960                
-            }).touch();            
+                width: 960,
+                height: 640
+            }).controls().touch();            
         
-        //values for collision detection        
-        var SPRITE_PLAYER = 1;
-        var SPRITE_OTHER = 2;
-        
-        //load map for collision
         //load background tile
         //player
-        //player through bullets
+        Q.Sprite.extend("Player",{
+            init: function(p) {
+              this._super(p, { asset: "player.png", x: 110, y: 50, jumpSpeed: -380});
+              this.add('2d, platformerControls');              
+            },
+            step: function(dt) {
+                if(Q.inputs['left'] && this.p.direction == 'right') {
+                    this.p.flip = 'x';
+                } 
+                if(Q.inputs['right']  && this.p.direction == 'left') {
+                    this.p.flip = false;                    
+                }
+            }                    
+          });
+                       
+        
+        
+//player through bullets
         //enemies that move
         //enemies that throw
         //goal
         
         //setup level 1, @TODO make it so that it could be multiple levels?
         Q.scene("level1",function(stage) {
-          stage.collisionLayer(new Q.TileLayer({ dataAsset: 'level1.tmx', sheet: 'tiles', type: SPRITE_OTHER }));
+          
+            var background = new Q.TileLayer({ dataAsset: 'level1.tmx', layerIndex: 0, sheet: 'tiles', tileW: 70, tileH: 70, type: Q.SPRITE_NONE });
+            stage.insert(background);
+            console.log(background);
+            
+            stage.collisionLayer(new Q.TileLayer({ dataAsset: 'level1.tmx', layerIndex:1,  sheet: 'tiles', tileW: 70, tileH: 70 }));
+          
+            var player = stage.insert(new Q.Player());
+
+            stage.add("viewport").follow(player,{x: true, y: true},{minX: 0, maxX: background.p.w, minY: 0, maxY: background.p.h});
+          
         });
         
         
         //load assets
-        Q.load("tiles_map.png, level1.tmx", function() {
+        Q.load("tiles_map.png, player.png, level1.tmx", function() {
           Q.sheet("tiles","tiles_map.png", { tilew: 70, tileh: 70});          
           Q.stageScene("level1");
         });
