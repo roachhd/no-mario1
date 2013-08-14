@@ -42,7 +42,7 @@
                        
         Q.Sprite.extend("GroundEnemy", {
             init: function(p) {
-                this._super(p, {vx: Math.random()*-200, defaultDirection: 'left'});
+                this._super(p, {vx: -100, defaultDirection: 'left'});
                 this.add('2d, aiBounce');
                 
                 this.on("bump.left,bump.right",function(collision) {
@@ -54,14 +54,38 @@
                 this.on("bump.top",function(collision) {
                     if(collision.obj.isA("Player")) { 
                         //make the player jump
-                        collision.obj.p.vy = -100;
+                        collision.obj.p.vy = -300;
                         
                         //kill enemy
                         this.destroy();
                     }
                 });
+            },
+            step: function(dt) {        
+                var dirX = this.p.vx/Math.abs(this.p.vx);
+                var ground = Q.stage().locate(this.p.x, this.p.y + this.p.h/2 + 1, Q.SPRITE_DEFAULT);
+                var nextTile = Q.stage().locate(this.p.x + dirX * this.p.w/2 + dirX, this.p.y + this.p.h/2 + 1, Q.SPRITE_DEFAULT);
                 
-                
+                //if we are on ground and there is a cliff
+                if(!nextTile && ground) {
+                    if(this.p.vx > 0) {
+                        if(this.p.defaultDirection == 'right') {
+                            this.p.flip = 'x';
+                        }
+                        else {
+                            this.p.flip = false;
+                        }
+                    }
+                    else {
+                        if(this.p.defaultDirection == 'left') {
+                            this.p.flip = 'x';
+                        }
+                        else {
+                            this.p.flip = false;
+                        }
+                    }
+                    this.p.vx = -this.p.vx;
+                }
             }
         });
         
@@ -106,7 +130,7 @@
             var background = new Q.TileLayer({ dataAsset: 'level1.tmx', layerIndex: 0, sheet: 'tiles', tileW: 70, tileH: 70, type: Q.SPRITE_NONE });
             stage.insert(background);
             
-            stage.collisionLayer(new Q.TileLayer({ dataAsset: 'level1.tmx', layerIndex:1,  sheet: 'tiles', tileW: 70, tileH: 70 }));
+            stage.collisionLayer(new Q.TileLayer({ dataAsset: 'level1.tmx', layerIndex:1,  sheet: 'tiles', tileW: 70, tileH: 70, type: Q.SPRITE_DEFAULT }));
           
             var player = stage.insert(new Q.Player());
             
@@ -126,11 +150,36 @@
                     enemyType: 'VerticalEnemy'
                 },
                 {
+                    x: 1080,
+                    y: 120,
+                    rangeY: 80,
+                    asset: "fly.png",
+                    enemyType: 'VerticalEnemy'
+                },
+                {
                     x: 6*70,
                     y: 3*70,
                     asset: "slime.png",
                     enemyType: 'GroundEnemy'
-                }
+                },
+                {
+                    x: 8*70,
+                    y: 70,
+                    asset: "slime.png",
+                    enemyType: 'GroundEnemy'
+                },
+                {
+                    x: 18*70,
+                    y: 120,
+                    asset: "slime.png",
+                    enemyType: 'GroundEnemy'
+                },
+                {
+                    x: 12*70,
+                    y: 120,
+                    asset: "slime.png",
+                    enemyType: 'GroundEnemy'
+                },
             ];
             
             for(i in enemies) {
