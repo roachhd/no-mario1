@@ -190,6 +190,11 @@
           
         });
         
+        Q.scene("endGame",function(stage) {
+            alert('game over');
+            window.location = "";
+        });
+        
         
         //load assets
         Q.load("tiles_map.png, player.png, slime.png, fly.png, level1.tmx", function() {
