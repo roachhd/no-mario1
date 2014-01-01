@@ -22,14 +22,14 @@
                 development: true
             }).controls().touch();            
         
-       
+      
         //load background tile
         //player
         Q.Sprite.extend("Player",{
             init: function(p) {
                 this._super(p, { asset: "player.png", x: 110, y: 50, jumpSpeed: -400, lives: 3, coins: 0});
                 this.add("2d, platformerControls"); 
-                this.p.timeInvinsible = 0;
+                this.p.timeInvincible = 0;
 
                 this.on("hit.sprite",function(collision) {
                     if(collision.obj.isA("Coin")) {
@@ -49,50 +49,58 @@
                     this.p.flip = false;                    
                 }
                 
-                if(this.p.timeInvinsible > 0) {
-                    this.p.timeInvinsible = Math.max(this.p.timeInvinsible - dt, 0);
+                if(this.p.timeInvincible > 0) {
+                    this.p.timeInvincible = Math.max(this.p.timeInvincible - dt, 0);
                 }
             },
             damage: function() {
-                //only damage if not in "invinsible" mode, otherwise beign next to an enemy takes all the lives inmediatly
-                if(!this.p.timeInvinsible) {
+                //only damage if not in "invincible" mode, otherwise beign next to an enemy takes all the lives inmediatly
+                if(!this.p.timeInvincible) {
                     this.p.lives--;
                     
-                    //will be invinsible for 1 second
-                    this.p.timeInvinsible = 1;
+                    //will be invincible for 1 second
+                    this.p.timeInvincible = 1;
                     
                     if(this.p.lives<0) {
                         this.destroy();
                         Q.stageScene("endGame",1, { label: "Game Over" }); 
                     }
                     else {
-                        //@TODO (yes, you who are reading now!) add an animation to show it"s been damaged
+                        //@TODO (yes, to you, who is reading now!) add an animation to show it"s been damaged
                         var livesLabel = Q("UI.Text",1).first();
                         livesLabel.p.label = "Lives x "+this.p.lives;
                     }
                 }
             }
           });
-                       
-        Q.Sprite.extend("GroundEnemy", {
-            init: function(p) {
-                this._super(p, {vx: -100, defaultDirection: "left"});
-                this.add("2d, aiBounce");
-                
-                this.on("bump.left,bump.right",function(collision) {
+        
+        //component for common enemy behaviors
+        Q.component("commonEnemy", {
+            added: function() {
+                var entity = this.entity;
+                entity.on("bump.left,bump.right,bump.bottom",function(collision) {
                     if(collision.obj.isA("Player")) {                        
                       collision.obj.damage();
                     }
                 });
-                this.on("bump.top",function(collision) {
+                entity.on("bump.top",function(collision) {
                     if(collision.obj.isA("Player")) { 
                         //make the player jump
-                        collision.obj.p.vy = -300;
+                        collision.obj.p.vy = -100;
                         
                         //kill enemy
                         this.destroy();
                     }
                 });
+            },
+            
+        });
+
+
+        Q.Sprite.extend("GroundEnemy", {
+            init: function(p) {
+                this._super(p, {vx: -100, defaultDirection: "left"});
+                this.add("2d, aiBounce, commonEnemy");
             },
             step: function(dt) {        
                 var dirX = this.p.vx/Math.abs(this.p.vx);
@@ -125,21 +133,9 @@
         Q.Sprite.extend("VerticalEnemy", {
             init: function(p) {
                 this._super(p, {vy: -100, rangeY: 200, gravity: 0 });
-                this.add("2d");
+                this.add("2d, commonEnemy");
                 
                 this.p.initialY = this.p.y;
-                
-                this.on("bump.left,bump.right",function(collision) {
-                    if(collision.obj.isA("Player")) { 
-                      collision.obj.damage();
-                    }
-                });
-                this.on("bump.top",function(collision) {
-                    if(collision.obj.isA("Player")) { 
-                      collision.obj.p.vy = -100;
-                      this.destroy();
-                    }
-                });
             },
             step: function(dt) {                
                 if(this.p.y - this.p.initialY >= this.p.rangeY && this.p.vy > 0) {
@@ -165,82 +161,35 @@
             
             stage.collisionLayer(new Q.TileLayer({ dataAsset: "level1.tmx", layerIndex:1,  sheet: "tiles", tileW: 70, tileH: 70, type: Q.SPRITE_DEFAULT }));
             
-            
-            
             var player = stage.insert(new Q.Player());
             
-            //enemies
-            var enemies = [
-                {
-                    x: 18*70,
-                    y: 6*70,
-                    asset: "slime.png",
-                    enemyType: "GroundEnemy"
-                },
-                {
-                    x: 800,
-                    y: 120,
-                    rangeY: 70,
-                    asset: "fly.png",
-                    enemyType: "VerticalEnemy"
-                },
-                {
-                    x: 1080,
-                    y: 120,
-                    rangeY: 80,
-                    asset: "fly.png",
-                    enemyType: "VerticalEnemy"
-                },
-                {
-                    x: 6*70,
-                    y: 3*70,
-                    asset: "slime.png",
-                    enemyType: "GroundEnemy"
-                },
-                {
-                    x: 8*70,
-                    y: 70,
-                    asset: "slime.png",
-                    enemyType: "GroundEnemy"
-                },
-                {
-                    x: 18*70,
-                    y: 120,
-                    asset: "slime.png",
-                    enemyType: "GroundEnemy"
-                },
-                {
-                    x: 12*70,
-                    y: 120,
-                    asset: "slime.png",
-                    enemyType: "GroundEnemy"
-                },
+            //level assets. format must be as shown: [[ClassName, params], .. ] 
+            var levelAssets = [
+                ["GroundEnemy", {x: 18*70, y: 6*70, asset: "slime.png"}],
+                ["VerticalEnemy", {x: 800, y: 120, rangeY: 70, asset: "fly.png"}],
+                ["VerticalEnemy", {x: 1080, y: 120, rangeY: 80, asset: "fly.png"}],
+                ["GroundEnemy", {x: 6*70, y: 3*70, asset: "slime.png"}],
+                ["GroundEnemy", {x: 8*70, y: 70, asset: "slime.png"}],
+                ["GroundEnemy", {x: 18*70, y: 120, asset: "slime.png"}],
+                ["GroundEnemy", {x: 12*70, y: 120, asset: "slime.png"}],
+                ["Coin", {x: 300, y: 100}],
+                ["Coin", {x: 360, y: 100}],
+                ["Coin", {x: 420, y: 100}],
+                ["Coin", {x: 480, y: 100}],
+                ["Coin", {x: 800, y: 300}],
+                ["Coin", {x: 860, y: 300}],
+                ["Coin", {x: 920, y: 300}],
+                ["Coin", {x: 980, y: 300}],
+                ["Coin", {x: 1040, y: 300}],
+                ["Coin", {x: 1100, y: 300}],
+                ["Coin", {x: 1160, y: 300}],
+                ["Coin", {x: 1250, y: 400}],
+                ["Coin", {x: 1310, y: 400}],
+                ["Coin", {x: 1370, y: 400}]
             ];
             
-            for(i in enemies) {
-                stage.insert(new Q[enemies[i].enemyType](enemies[i]));
-            }
-            
-            var coins = [
-                {x: 300, y: 100},
-                {x: 360, y: 100},
-                {x: 420, y: 100},
-                {x: 480, y: 100},
-                {x: 800, y: 300},
-                {x: 860, y: 300},
-                {x: 920, y: 300},
-                {x: 980, y: 300},
-                {x: 1040, y: 300},
-                {x: 1100, y: 300},
-                {x: 1160, y: 300},
-                {x: 1250, y: 400},
-                {x: 1310, y: 400},
-                {x: 1370, y: 400},
-            ];
-            
-            for(i in coins) {
-                stage.insert(new Q.Coin(coins[i]));
-            }
+            //load level assets
+            stage.loadAssets(levelAssets);  
             
             stage.add("viewport").follow(player,{x: true, y: true},{minX: 0, maxX: background.p.w, minY: 0, maxY: background.p.h});
           
@@ -282,10 +231,10 @@
         });
         
         //load assets
-        Q.load("tiles_map.png, player.png, slime.png, fly.png, level1.tmx, coin.png", function() {
-          Q.sheet("tiles","tiles_map.png", { tilew: 70, tileh: 70});          
-          Q.stageScene("level1");
-          Q.stageScene("gameStats",1);
+        Q.load("tiles_map.png, player.png, slime.png, fly.png, level1.tmx, coin.png", function() {            
+            Q.sheet("tiles","tiles_map.png", { tilew: 70, tileh: 70});          
+            Q.stageScene("level1");
+            Q.stageScene("gameStats",1);
         });
         
         
